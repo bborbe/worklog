@@ -11,5 +11,14 @@ test: glide
 
 run:
 	worklog \
+	-author "Benjamin Borbe" \
+	-dir "" \
+	-logtostderr \
+	-v=4
+
+rundebug:
+	worklog \
+	-author "Benjamin Borbe" \
+	-dir "" \
 	-logtostderr \
 	-v=4

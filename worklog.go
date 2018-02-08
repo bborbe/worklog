@@ -12,7 +12,12 @@ import (
 	"runtime"
 	"github.com/bborbe/io"
 	"os"
+	"regexp"
+	"strings"
 )
+
+var dirPtr = flag.String("dir", "", "git dir")
+var authorPtr = flag.String("author", "", "name to match")
 
 func main() {
 	defer glog.Flush()
@@ -20,15 +25,18 @@ func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	if err := do(context.Background(), os.Stdout); err != nil {
+	if err := do(
+		context.Background(),
+		os.Stdout,
+		*dirPtr,
+		*authorPtr,
+	); err != nil {
 		glog.Exit(err)
 	}
 }
 
-func do(ctx context.Context, out io.Writer) error {
+func do(ctx context.Context, out io.Writer, dir string, author string) error {
 	glog.V(4).Infof("run worklog started")
-
-	var dir = "/Users/bborbe/Documents/workspaces/sm-isac"
 
 	var wg sync.WaitGroup
 
@@ -40,8 +48,8 @@ func do(ctx context.Context, out io.Writer) error {
 	go func() {
 		defer wg.Done()
 		for commit := range commitsChan {
-			if commit.Author == "Benjamin Borbe" {
-				fmt.Fprintf(out, commit.String())
+			if strings.Index(commit.Author, author) != -1 {
+				fmt.Fprintln(out, commit.String())
 			}
 		}
 	}()
@@ -93,16 +101,44 @@ func readGitLog(dir string, commandOutputChan chan<- []byte) error {
 	return nil
 }
 
+//var commitRegex = regexp.MustCompile(`(?is)\ncommit [^\n]\n.*?Author: ([^\n].*)\n.*?Date: ([^\n].*)\n.*?\n\n`)
+var commitRegex = regexp.MustCompile(`(?is)commit .*?\nAuthor:\s+([^\n]+).*\nDate:\s+([^\n]+).*?\n    ([^\n]+)\n`)
+
 func consumeCommit(l chan<- commit, buffer *bytes.Buffer) error {
 	glog.V(4).Infof("consume commits started")
+
+	content := buffer.Bytes()
+	matches := commitRegex.FindAllSubmatch(content, -1)
+	glog.V(4).Infof("found %d commits", len(matches))
+	replaces := 0
+	for _, match := range matches {
+		replaces += len(match[0])
+		date, err := parseDate(string(match[2]))
+		if err != nil {
+			glog.Exitf("parse date failed: %v", err)
+		}
+		c := commit{
+			Author:  fmt.Sprintf("%s", string(match[1])),
+			Date:    date,
+			Message: fmt.Sprintf("%s", string(match[3])),
+		}
+		l <- c
+	}
+	glog.V(4).Infof("truncate %d bytes from content", replaces)
+	buffer.Truncate(replaces)
+
 	glog.V(4).Infof("consume commits finished")
 	return nil
+}
+
+func parseDate(dateString string) (time.Time, error) {
+	return time.Parse("Mon Jan 2 15:04:05 2006 -0700", dateString)
 }
 
 type commit struct {
 	Author  string
 	Message string
-	Date    *time.Time
+	Date    time.Time
 }
 
 func (c *commit) String() string {
