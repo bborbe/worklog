@@ -53,9 +53,9 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 	go func() {
 		defer wgPrintCommits.Done()
 		for commit := range commitsChan {
-			//if strings.Index(commit.Author, author) != -1 {
-			fmt.Fprintln(out, commit.String())
-			//	}
+			if strings.Index(commit.Author, author) != -1 {
+				fmt.Fprintln(out, commit.String())
+			}
 		}
 	}()
 
