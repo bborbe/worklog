@@ -18,16 +18,29 @@ func main() {
 }
 
 func do(ctx context.Context) error {
-
-	c := make(chan []byte, 10)
-
 	var wg sync.WaitGroup
+
+	commitsChan := make(chan log, 10)
+
+	commandOutputChan := make(chan []byte, 10)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		b := &bytes.Buffer{}
+		for content := range commandOutputChan {
+			b.Write(content)
+			if err := consumeCommit(commitsChan, b); err != nil {
+				fmt.Errorf("consume commit failed: %v", err)
+			}
+		}
+	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		cmd := exec.Command("git", "log", "--raw")
-		cmd.Stdout = NewLogParser(c)
+		cmd.Stdout = NewLogParser(commandOutputChan)
 		if err := cmd.Start(); err != nil {
 			fmt.Errorf("start command failed: %v", err)
 		}
@@ -35,9 +48,12 @@ func do(ctx context.Context) error {
 			fmt.Errorf("wait for command finish failed: %v", err)
 		}
 	}()
-
 	wg.Wait()
 
+	return nil
+}
+
+func consumeCommit(l chan<- log, buffer *bytes.Buffer) error {
 	return nil
 }
 
