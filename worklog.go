@@ -64,7 +64,7 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 
 		normalizedDir, err := io_util.NormalizePath(dir)
 		if err != nil {
-			glog.Exitf("normalize path failed: %v", err)
+			glog.Exitf("normalize path %s failed: %v", dir, err)
 		}
 
 		// parse commits from byte
@@ -75,7 +75,7 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 			for content := range commandOutputChan {
 				buf.Write(content)
 				if err := consumeCommit(commitsChan, buf); err != nil {
-					glog.Exitf("consume commit failed: %v", err)
+					glog.Exitf("consume commit of dir %s failed: %v", normalizedDir, err)
 				}
 			}
 		}()
@@ -85,7 +85,7 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 		go func() {
 			defer wgReadGitLog.Done()
 			if err := readGitLog(normalizedDir, days, commandOutputChan); err != nil {
-				glog.Exitf("read git commit failed: %v", err)
+				glog.Exitf("read git commits of dir %s failed: %v", normalizedDir, err)
 			}
 		}()
 	}
