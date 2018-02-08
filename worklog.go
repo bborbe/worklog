@@ -41,7 +41,7 @@ func main() {
 }
 
 func do(ctx context.Context, out io.Writer, dirs []string, author string, days int) error {
-	glog.V(4).Infof("run worklog started")
+	glog.V(1).Infof("run worklog started")
 
 	var wgPrintCommits sync.WaitGroup
 	var wgReadGitLog sync.WaitGroup
@@ -53,9 +53,9 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 	go func() {
 		defer wgPrintCommits.Done()
 		for commit := range commitsChan {
-			if strings.Index(commit.Author, author) != -1 {
-				fmt.Fprintln(out, commit.String())
-			}
+			//if strings.Index(commit.Author, author) != -1 {
+			fmt.Fprintln(out, commit.String())
+			//	}
 		}
 	}()
 
@@ -72,11 +72,12 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 		go func() {
 			defer wgReadGitLog.Done()
 			buf := &bytes.Buffer{}
+			buf.WriteString("\n")
 			for content := range commandOutputChan {
 				buf.Write(content)
-				if err := consumeCommit(commitsChan, buf, normalizedDir); err != nil {
-					glog.Exitf("consume commit of dir %s failed: %v", normalizedDir, err)
-				}
+			}
+			if err := consumeCommit(commitsChan, buf, normalizedDir); err != nil {
+				glog.Exitf("consume commit of dir %s failed: %v", normalizedDir, err)
 			}
 		}()
 
@@ -94,7 +95,7 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 	close(commitsChan)
 	wgPrintCommits.Wait()
 
-	glog.V(4).Infof("run worklog finished")
+	glog.V(1).Infof("run worklog finished")
 	return nil
 }
 
@@ -117,18 +118,14 @@ func readGitLog(dir string, days int, commandOutputChan chan<- []byte) error {
 	return nil
 }
 
-//var commitRegex = regexp.MustCompile(`(?is)\ncommit [^\n]\n.*?Author: ([^\n].*)\n.*?Date: ([^\n].*)\n.*?\n\n`)
-var commitRegex = regexp.MustCompile(`(?is)commit .*?\nAuthor:\s+([^\n]+).*\nDate:\s+([^\n]+).*?\n    ([^\n]+)\n`)
+var commitRegex = regexp.MustCompile(`(?is)\ncommit\s+.*?\nAuthor:\s+([^\n]+).*?\nDate:\s+([^\n]+).*?\n    ([^\n]+)`)
 
 func consumeCommit(l chan<- commit, buffer *bytes.Buffer, dir string) error {
 	glog.V(4).Infof("consume commits started")
 
-	content := buffer.Bytes()
-	matches := commitRegex.FindAllSubmatch(content, -1)
+	matches := commitRegex.FindAllSubmatch(buffer.Bytes(), -1)
 	glog.V(4).Infof("found %d commits", len(matches))
-	replaces := 0
 	for _, match := range matches {
-		replaces += len(match[0])
 		date, err := parseDate(string(match[2]))
 		if err != nil {
 			glog.Exitf("parse date failed: %v", err)
@@ -140,9 +137,11 @@ func consumeCommit(l chan<- commit, buffer *bytes.Buffer, dir string) error {
 			Dir:     dir,
 		}
 		l <- c
+		if glog.V(6) {
+			glog.Infof("match: %s\n", string(match[0]))
+			glog.Infof("commit: %v", l)
+		}
 	}
-	glog.V(4).Infof("truncate %d bytes from content", replaces)
-	buffer.Truncate(replaces)
 
 	glog.V(4).Infof("consume commits finished")
 	return nil
