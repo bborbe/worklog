@@ -12,7 +12,7 @@ func TestEmptyBufferCreateNoLog(t *testing.T) {
 	l := make(chan commit, 10)
 	buffer := &bytes.Buffer{}
 
-	if err := AssertThat(consumeCommit(l, buffer), NilValue()); err != nil {
+	if err := AssertThat(consumeCommit(l, buffer, ""), NilValue()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -33,7 +33,7 @@ Date:   Wed Feb 7 14:59:26 2018 +0000
     My Commit
 `)
 
-	if err := AssertThat(consumeCommit(l, buffer), NilValue()); err != nil {
+	if err := AssertThat(consumeCommit(l, buffer, ""), NilValue()); err != nil {
 		t.Fatal(err)
 	}
 

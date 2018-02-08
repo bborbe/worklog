@@ -74,7 +74,7 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 			buf := &bytes.Buffer{}
 			for content := range commandOutputChan {
 				buf.Write(content)
-				if err := consumeCommit(commitsChan, buf); err != nil {
+				if err := consumeCommit(commitsChan, buf, normalizedDir); err != nil {
 					glog.Exitf("consume commit of dir %s failed: %v", normalizedDir, err)
 				}
 			}
@@ -120,7 +120,7 @@ func readGitLog(dir string, days int, commandOutputChan chan<- []byte) error {
 //var commitRegex = regexp.MustCompile(`(?is)\ncommit [^\n]\n.*?Author: ([^\n].*)\n.*?Date: ([^\n].*)\n.*?\n\n`)
 var commitRegex = regexp.MustCompile(`(?is)commit .*?\nAuthor:\s+([^\n]+).*\nDate:\s+([^\n]+).*?\n    ([^\n]+)\n`)
 
-func consumeCommit(l chan<- commit, buffer *bytes.Buffer) error {
+func consumeCommit(l chan<- commit, buffer *bytes.Buffer, dir string) error {
 	glog.V(4).Infof("consume commits started")
 
 	content := buffer.Bytes()
@@ -137,6 +137,7 @@ func consumeCommit(l chan<- commit, buffer *bytes.Buffer) error {
 			Author:  fmt.Sprintf("%s", string(match[1])),
 			Date:    date,
 			Message: fmt.Sprintf("%s", string(match[3])),
+			Dir:     dir,
 		}
 		l <- c
 	}
@@ -155,10 +156,12 @@ type commit struct {
 	Author  string
 	Message string
 	Date    time.Time
+	Dir     string
 }
 
 func (c *commit) String() string {
-	return fmt.Sprintf("%s %s", c.Date.Format("2006-01-02T15:04:05"), c.Message)
+	parts := strings.Split(c.Dir, "/")
+	return fmt.Sprintf("%s %s %s", c.Date.Format("2006-01-02T15:04:05"), parts[len(parts)-1], c.Message)
 }
 
 func NewLogParser(c chan<- []byte) *logParser {
