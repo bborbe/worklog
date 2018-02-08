@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"sync"
 	flag "github.com/bborbe/flagenv"
+	io_util "github.com/bborbe/io/util"
 	"runtime"
 	"github.com/bborbe/io"
 	"os"
@@ -18,6 +19,7 @@ import (
 
 var dirPtr = flag.String("dir", "", "git dir")
 var authorPtr = flag.String("author", "", "name to match")
+var daysPtr = flag.Int("days", 7, "days to print")
 
 func main() {
 	defer glog.Flush()
@@ -25,28 +27,31 @@ func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	dirs := strings.Split(*dirPtr, ",")
+
 	if err := do(
 		context.Background(),
 		os.Stdout,
-		*dirPtr,
+		dirs,
 		*authorPtr,
+		*daysPtr,
 	); err != nil {
 		glog.Exit(err)
 	}
 }
 
-func do(ctx context.Context, out io.Writer, dir string, author string) error {
+func do(ctx context.Context, out io.Writer, dirs []string, author string, days int) error {
 	glog.V(4).Infof("run worklog started")
 
-	var wg sync.WaitGroup
+	var wgPrintCommits sync.WaitGroup
+	var wgReadGitLog sync.WaitGroup
 
 	commitsChan := make(chan commit, 10)
-	commandOutputChan := make(chan []byte, 10)
 
 	// print my commits
-	wg.Add(1)
+	wgPrintCommits.Add(1)
 	go func() {
-		defer wg.Done()
+		defer wgPrintCommits.Done()
 		for commit := range commitsChan {
 			if strings.Index(commit.Author, author) != -1 {
 				fmt.Fprintln(out, commit.String())
@@ -54,38 +59,49 @@ func do(ctx context.Context, out io.Writer, dir string, author string) error {
 		}
 	}()
 
-	// parse commits from byte
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer close(commitsChan)
-		buf := &bytes.Buffer{}
-		for content := range commandOutputChan {
-			buf.Write(content)
-			if err := consumeCommit(commitsChan, buf); err != nil {
-				glog.Exitf("consume commit failed: %v", err)
-			}
-		}
-	}()
+	for _, dir := range dirs {
+		commandOutputChan := make(chan []byte, 10)
 
-	// read git log
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := readGitLog(dir, commandOutputChan); err != nil {
-			glog.Exitf("read git commit failed: %v", err)
+		normalizedDir, err := io_util.NormalizePath(dir)
+		if err != nil {
+			glog.Exitf("normalize path failed: %v", err)
 		}
-	}()
-	wg.Wait()
+
+		// parse commits from byte
+		wgReadGitLog.Add(1)
+		go func() {
+			defer wgReadGitLog.Done()
+			buf := &bytes.Buffer{}
+			for content := range commandOutputChan {
+				buf.Write(content)
+				if err := consumeCommit(commitsChan, buf); err != nil {
+					glog.Exitf("consume commit failed: %v", err)
+				}
+			}
+		}()
+
+		// read git log
+		wgReadGitLog.Add(1)
+		go func() {
+			defer wgReadGitLog.Done()
+			if err := readGitLog(normalizedDir, days, commandOutputChan); err != nil {
+				glog.Exitf("read git commit failed: %v", err)
+			}
+		}()
+	}
+
+	wgReadGitLog.Wait()
+	close(commitsChan)
+	wgPrintCommits.Wait()
 
 	glog.V(4).Infof("run worklog finished")
 	return nil
 }
 
-func readGitLog(dir string, commandOutputChan chan<- []byte) error {
+func readGitLog(dir string, days int, commandOutputChan chan<- []byte) error {
 	defer close(commandOutputChan)
 	glog.V(4).Infof("read git %s started", dir)
-	cmd := exec.Command("git", "log", "--raw")
+	cmd := exec.Command("git", "log", "--since", fmt.Sprintf("%d days ago", days), "--raw")
 	cmd.Dir = dir
 	cmd.Stdout = NewLogParser(commandOutputChan)
 	if glog.V(4) {
