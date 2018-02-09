@@ -15,6 +15,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"github.com/bborbe/run/errors"
 )
 
 var dirPtr = flag.String("dir", "", "git dir")
@@ -44,9 +45,9 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 	glog.V(1).Infof("run worklog started")
 
 	var wgPrintCommits sync.WaitGroup
-	var wgReadGitLog sync.WaitGroup
 
 	commitsChan := make(chan commit, 10)
+	errorChan := make(chan error, 10)
 
 	// print my commits
 	wgPrintCommits.Add(1)
@@ -59,43 +60,67 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 		}
 	}()
 
+	var wgDir sync.WaitGroup
 	for _, dir := range dirs {
-		commandOutputChan := make(chan []byte, 10)
-
-		normalizedDir, err := io_util.NormalizePath(dir)
-		if err != nil {
-			glog.Exitf("normalize path %s failed: %v", dir, err)
-		}
-
-		// parse commits from byte
-		wgReadGitLog.Add(1)
+		wgDir.Add(1)
 		go func() {
-			defer wgReadGitLog.Done()
-			buf := &bytes.Buffer{}
-			buf.WriteString("\n")
-			for content := range commandOutputChan {
-				buf.Write(content)
-			}
-			if err := consumeCommit(commitsChan, buf, normalizedDir); err != nil {
-				glog.Exitf("consume commit of dir %s failed: %v", normalizedDir, err)
-			}
-		}()
-
-		// read git log
-		wgReadGitLog.Add(1)
-		go func() {
-			defer wgReadGitLog.Done()
-			if err := readGitLog(normalizedDir, days, commandOutputChan); err != nil {
-				glog.Exitf("read git commits of dir %s failed: %v", normalizedDir, err)
+			defer wgDir.Done()
+			if err := readCommits(commitsChan, dir, days); err != nil {
+				errorChan <- err
 			}
 		}()
 	}
+	wgDir.Wait()
 
-	wgReadGitLog.Wait()
 	close(commitsChan)
 	wgPrintCommits.Wait()
 
 	glog.V(1).Infof("run worklog finished")
+	close(errorChan)
+	if len(errorChan) > 0 {
+		return errors.NewByChan(errorChan)
+	}
+	return nil
+}
+
+func readCommits(commitsChan chan commit, dir string, days int) error {
+	commandOutputChan := make(chan []byte, 10)
+	errorChan := make(chan error, 10)
+
+	normalizedDir, err := io_util.NormalizePath(dir)
+	if err != nil {
+		return fmt.Errorf("normalize path %s failed: %v", dir, err)
+	}
+	var wgReadGitLog sync.WaitGroup
+
+	// parse commits from byte
+	wgReadGitLog.Add(1)
+	go func() {
+		defer wgReadGitLog.Done()
+		buf := &bytes.Buffer{}
+		buf.WriteString("\n")
+		for content := range commandOutputChan {
+			buf.Write(content)
+		}
+		if err := consumeCommit(commitsChan, buf, normalizedDir); err != nil {
+			errorChan <- fmt.Errorf("consume commit of dir %s failed: %v", normalizedDir, err)
+		}
+	}()
+
+	// read git log
+	wgReadGitLog.Add(1)
+	go func() {
+		defer wgReadGitLog.Done()
+		if err := readGitLog(normalizedDir, days, commandOutputChan); err != nil {
+			errorChan <- fmt.Errorf("read git commits of dir %s failed: %v", normalizedDir, err)
+		}
+	}()
+	wgReadGitLog.Wait()
+
+	close(errorChan)
+	if len(errorChan) > 0 {
+		return errors.NewByChan(errorChan)
+	}
 	return nil
 }
 
