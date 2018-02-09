@@ -1,0 +1,12 @@
+package: github.com/bborbe/worklog
+import:
+- package: github.com/bborbe/flagenv
+- package: github.com/bborbe/io
+  subpackages:
+  - util
+- package: github.com/bborbe/run
+  subpackages:
+  - errors
+- package: github.com/golang/glog
+testImport:
+- package: github.com/bborbe/assert
