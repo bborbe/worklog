@@ -62,10 +62,12 @@ func do(ctx context.Context, out io.Writer, dirs []string, author string, days i
 
 	var wgDir sync.WaitGroup
 	for _, dir := range dirs {
+		copyDir := dir
 		wgDir.Add(1)
 		go func() {
 			defer wgDir.Done()
-			if err := readCommits(commitsChan, dir, days); err != nil {
+			if err := readCommits(commitsChan, copyDir, days); err != nil {
+				glog.Infof("read commit failed: %v", err)
 				errorChan <- err
 			}
 		}()
@@ -103,6 +105,7 @@ func readCommits(commitsChan chan commit, dir string, days int) error {
 			buf.Write(content)
 		}
 		if err := consumeCommit(commitsChan, buf, normalizedDir); err != nil {
+			glog.Infof("consume commit failed: %v", err)
 			errorChan <- fmt.Errorf("consume commit of dir %s failed: %v", normalizedDir, err)
 		}
 	}()
@@ -112,6 +115,7 @@ func readCommits(commitsChan chan commit, dir string, days int) error {
 	go func() {
 		defer wgReadGitLog.Done()
 		if err := readGitLog(normalizedDir, days, commandOutputChan); err != nil {
+			glog.Infof("read git log failed: %v", err)
 			errorChan <- fmt.Errorf("read git commits of dir %s failed: %v", normalizedDir, err)
 		}
 	}()
