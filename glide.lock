@@ -1,5 +1,5 @@
 hash: fd00cc1e03b22cd0e0d25e7f3918d64f4c2b8deec4050f45e1aa8bbfd9756b1e
-updated: 2018-02-09T17:59:10.171016351+01:00
+updated: 2018-02-09T18:44:37.428656107+01:00
 imports:
 - name: github.com/bborbe/flagenv
   version: 4bf10dbe62f41ce40353a70225a84decfd16d3ac
@@ -8,7 +8,7 @@ imports:
   subpackages:
   - util
 - name: github.com/bborbe/run
-  version: eee9995de25c02e9fe745a391ce4dd05d7e2705e
+  version: ae1f8dd16e6a6dc48d3cd5db4831d20e71e814f9
   subpackages:
   - errors
 - name: github.com/golang/glog
