@@ -2,7 +2,7 @@
 
 ## Install
 
-`go get github.com/bborbe/bborbe/worklog`
+`go get github.com/bborbe/worklog`
 
 ## Usage
 
