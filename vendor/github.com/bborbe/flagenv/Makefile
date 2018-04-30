@@ -1,10 +1,7 @@
 default: test
 
-glide:
-	go get github.com/Masterminds/glide
-
-test: glide
-	GO15VENDOREXPERIMENT=1 go test -cover `glide novendor`
+test:
+	go test -cover -race $(shell go list ./... | grep -v /vendor/)
 
 goimports:
 	go get golang.org/x/tools/cmd/goimports
