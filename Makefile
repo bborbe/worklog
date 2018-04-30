@@ -1,13 +1,16 @@
+
 all: test install run
 
 install:
 	GOBIN=$(GOPATH)/bin GO15VENDOREXPERIMENT=1 go install worklog.go
 
-glide:
-	go get github.com/Masterminds/glide
+test:
+	go test -cover -race $(shell go list ./... | grep -v /vendor/)
 
-test: glide
-	GO15VENDOREXPERIMENT=1 go test -cover `glide novendor`
+format:
+	go get golang.org/x/tools/cmd/goimports
+	find . -type f -name '*.go' -not -path './vendor/*' -exec gofmt -w "{}" +
+	find . -type f -name '*.go' -not -path './vendor/*' -exec goimports -w "{}" +
 
 run:
 	worklog \
