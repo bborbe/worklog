@@ -1,21 +1,22 @@
 package main
 
 import (
-	"github.com/golang/glog"
-	"context"
-	"os/exec"
-	"fmt"
-	"time"
 	"bytes"
-	"sync"
-	flag "github.com/bborbe/flagenv"
-	io_util "github.com/bborbe/io/util"
-	"runtime"
-	"github.com/bborbe/io"
+	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
+
+	flag "github.com/bborbe/flagenv"
+	"github.com/bborbe/io"
+	io_util "github.com/bborbe/io/util"
 	"github.com/bborbe/run/errors"
+	"github.com/golang/glog"
 )
 
 var dirPtr = flag.String("dir", "", "git dir")
@@ -131,7 +132,7 @@ func readCommits(commitsChan chan commit, dir string, days int) error {
 func readGitLog(dir string, days int, commandOutputChan chan<- []byte) error {
 	defer close(commandOutputChan)
 	glog.V(4).Infof("read git %s started", dir)
-	cmd := exec.Command("git", "log", "--since", fmt.Sprintf("%d days ago", days), "--raw")
+	cmd := exec.Command("git", "log", "--all", "--since", fmt.Sprintf("%d days ago", days), "--raw")
 	cmd.Dir = dir
 	cmd.Stdout = NewLogParser(commandOutputChan)
 	if glog.V(4) {

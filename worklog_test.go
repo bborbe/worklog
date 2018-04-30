@@ -3,8 +3,9 @@ package main
 import (
 	"testing"
 
-	. "github.com/bborbe/assert"
 	"bytes"
+
+	. "github.com/bborbe/assert"
 )
 
 func TestEmptyBufferCreateNoLog(t *testing.T) {
