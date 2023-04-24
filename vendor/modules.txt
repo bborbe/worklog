@@ -1,0 +1,78 @@
+# github.com/bborbe/assert v0.0.0-20180420105557-765570a0aaf5
+## explicit
+github.com/bborbe/assert
+# github.com/bborbe/flagenv v0.0.0-20180427162735-62bb8205ca00
+## explicit
+github.com/bborbe/flagenv
+# github.com/bborbe/io v0.0.0-20161227150121-8c22cf733cf1
+## explicit
+github.com/bborbe/io
+github.com/bborbe/io/util
+# github.com/bborbe/run v0.0.0-20180413182934-9b247b4a1fb4
+## explicit
+github.com/bborbe/run/errors
+# github.com/bmatcuk/doublestar/v4 v4.0.2
+## explicit; go 1.16
+github.com/bmatcuk/doublestar/v4
+# github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+## explicit
+github.com/golang/glog
+# github.com/google/addlicense v1.1.1
+## explicit; go 1.13
+github.com/google/addlicense
+# github.com/incu6us/goimports-reviser v0.1.6
+## explicit; go 1.13
+github.com/incu6us/goimports-reviser
+github.com/incu6us/goimports-reviser/pkg/astutil
+github.com/incu6us/goimports-reviser/pkg/std
+github.com/incu6us/goimports-reviser/reviser
+# github.com/kisielk/errcheck v1.6.3
+## explicit; go 1.14
+github.com/kisielk/errcheck
+github.com/kisielk/errcheck/errcheck
+# github.com/maxbrunsfeld/counterfeiter/v6 v6.6.1
+## explicit; go 1.17
+github.com/maxbrunsfeld/counterfeiter/v6
+github.com/maxbrunsfeld/counterfeiter/v6/arguments
+github.com/maxbrunsfeld/counterfeiter/v6/command
+github.com/maxbrunsfeld/counterfeiter/v6/generator
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
+## explicit; go 1.11
+golang.org/x/lint
+golang.org/x/lint/golint
+# golang.org/x/mod v0.7.0
+## explicit; go 1.17
+golang.org/x/mod/internal/lazyregexp
+golang.org/x/mod/module
+golang.org/x/mod/semver
+# golang.org/x/sync v0.1.0
+## explicit
+golang.org/x/sync/errgroup
+# golang.org/x/sys v0.4.0
+## explicit; go 1.17
+golang.org/x/sys/execabs
+# golang.org/x/tools v0.5.0
+## explicit; go 1.18
+golang.org/x/tools/go/analysis
+golang.org/x/tools/go/ast/astutil
+golang.org/x/tools/go/gcexportdata
+golang.org/x/tools/go/internal/packagesdriver
+golang.org/x/tools/go/packages
+golang.org/x/tools/go/types/typeutil
+golang.org/x/tools/imports
+golang.org/x/tools/internal/event
+golang.org/x/tools/internal/event/core
+golang.org/x/tools/internal/event/keys
+golang.org/x/tools/internal/event/label
+golang.org/x/tools/internal/fastwalk
+golang.org/x/tools/internal/gcimporter
+golang.org/x/tools/internal/gocommand
+golang.org/x/tools/internal/gopathwalk
+golang.org/x/tools/internal/imports
+golang.org/x/tools/internal/packagesinternal
+golang.org/x/tools/internal/pkgbits
+golang.org/x/tools/internal/typeparams
+golang.org/x/tools/internal/typesinternal
